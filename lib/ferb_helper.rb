@@ -19,7 +19,9 @@ module FerbHelper
   def self.included(base)
     base.send :include, Ferb
     path_suffix = ''
-    if base.name =~ /Helper$/i
+    if base.name =~ /^ApplicationHelper$/i
+      path_suffix = 'shared_templates'
+    elsif base.name =~ /Helper$/i
       path_suffix = "#{base.name.gsub(/Helper$/,'').underscore}/"
     elsif base.name =~ /Controller$/i
       path_suffix = "#{base.name.gsub(/Controller$/,'').underscore}/"
