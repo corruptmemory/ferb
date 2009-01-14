@@ -21,9 +21,16 @@ class MethodArgs
   MAX_ARGS = 20
   attr_reader :params
 
+  def test_method(object,meth,*args)
+    m = object.method(meth)
+    m.call(*args)
+  end
+
   def output_method_info(klass, object, meth, is_singleton = false)
     @params = nil
     @values = nil
+    @arg_count = nil
+    @arity = nil
     num_args = 0
     unless %w[initialize].include?(meth.to_s)
       if is_singleton
@@ -38,6 +45,11 @@ class MethodArgs
         if event[/call/] && classname == MethodArgsHelper && id == meth
           @params = eval("local_variables", binding)
           @values = eval("local_variables.map{|x| eval(x)}", binding)
+          if (@arg_count >= @arity) and (@params.length > @arity)
+            if @values[-1].nil?
+              @params[-1] = "&#{@params[-1]}"
+            end
+          end
           throw :done
         end
       rescue Exception
@@ -45,13 +57,19 @@ class MethodArgs
     }
     if arity >= 0
       num_args = arity
-      catch(:done){ object.send(meth, *(0...arity)) }
+      catch(:done) do
+        @arg_count = arity
+        @arity = arity
+        test_method(object,meth,*(0...arity))
+      end
     else
       # determine number of args (including splat & block)
       MAX_ARGS.downto(arity.abs - 1) do |i|
         catch(:done) do
           begin
-            object.send(meth, *(0...i))
+            @arg_count = i
+            @arity = arity.abs - 1
+            test_method(object,meth,*(0...i))
           rescue Exception
           end
         end
@@ -66,7 +84,15 @@ class MethodArgs
       end
       args = (0...arity.abs-1).to_a
       catch(:done) do
-        args.empty? ? object.send(meth) : object.send(meth, *args)
+        if args.empty?
+          @arg_count = 0
+          @arity = 0
+          test_method(object,meth)
+        else
+          @arg_count = args.length
+          @arity = args.length
+          test_method(object,meth,*args)
+        end
       end
     end
     set_trace_func(nil)
@@ -80,12 +106,7 @@ class MethodArgs
       end.first
     end
     original_params = @params
-    @params ||= []
-    @params = @params[0,num_args]
     @params = fmt_params.call(@params,arity)
-    if @params.length < original_params.length
-      @params << "&#{original_params[-1]}"
-    end
     set_trace_func(nil)
   end
 end
