@@ -67,14 +67,14 @@ EOS
     <<EOS
 def #{signature}
   if Ferb.enable_reload?
-    full_path = '#{source_file_data[:full_path]}'
-    signature = '#{function}'
-    if should_reload?(full_path)
-      args = {:path => full_path}
-      template = Ferb.load_template(args)
-      add_timestamp(args[:full_path], args[:timestamp])
-      internal_func = Ferb.construct_internal_function_def(signature,template)
-      eval(internal_func)
+    __full_path = '#{source_file_data[:full_path]}'
+    __signature = '#{function}'
+    if should_reload?(__full_path)
+      __args = {:path => __full_path}
+      __template = Ferb.load_template(__args)
+      add_timestamp(__args[:full_path], __args[:timestamp])
+      __internal_func = Ferb.construct_internal_function_def(__signature,__template)
+      eval(__internal_func)
     end
   end
   __ferb_#{clean_sig}
