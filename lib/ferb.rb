@@ -123,12 +123,23 @@ EOS
   end
 
   def self.construct_function_sig(function, sig)
-    sig = sig.strip
-    if !sig.empty?
-      ["#{function.to_s.strip}(#{sig})", "#{function.to_s.strip}(#{MethodArgsHelper.get_args(sig).join(',')})"]
+    if sig and !sig.strip.empty?
+      sig = sig.strip
+      ma = MethodArgs.new
+      ["#{function.to_s.strip}(#{sig})", "#{function.to_s.strip}(#{ma.output_arg_info(sig).join(',')})"]
     else
-      [function.to_s.strip, nil]
+      [function.to_s.strip, function.to_s.strip]
     end
+  end
+
+  def self.extract_signature(function)
+    function = function.to_s.strip
+    result = [function, nil]
+    if function =~ /^([a-z0-9_?!=]*)\((.*)\)$/i
+      result = [$1, $2]
+      result = [$1, nil] if result[1].strip.empty?
+    end
+    result
   end
 
   def self.construct_function_def(function, template, args = nil)
@@ -138,7 +149,8 @@ EOS
     if parts.is_a?(Array)
       funsig, clean_sig = construct_function_sig(function,parts[0])
     else
-      funsig = function
+      sig = extract_signature(function)
+      funsig, clean_sig = construct_function_sig(*sig)
     end
     build_template(funsig, clean_sig, args, function)
   end
